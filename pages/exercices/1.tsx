@@ -8,14 +8,36 @@ import { RepliesButton } from '../../src/components/tweets/RepliesButton';
 import { Tweet } from '../../src/components/tweets/Tweet';
 import TwitterLayout from '../../src/components/TwitterLayout';
 
+import { z } from 'zod';
+
 const notifyFailed = () => toast.error("Couldn't fetch tweet...");
 
 // 🦁 Créer un schéma zod appelé TweetsScheme qui correspond à la réponse de l'API
 // Tu peux `console.log` la réponse de l'API pour voir la structure attendue
 // Tu pourrais utiliser zod transform pour modifier directement dans le schéma la date
-// 💡 const TweetsScheme = z.object({...
+const TweetsScheme = z.object({
+  tweets: z.array(
+    z.object({
+      id: z.string(),
+      content: z.string(),
+      createdAt: z.string().transform((date) => new Date(date)),
+      user: z.object({
+        id: z.string(),
+        displayName: z.string(),
+        username: z.string(),
+        avatarUrl: z.string(),
+      }),
+      likes: z.array(z.string()).optional(),
+      _count: z.object({
+        likes: z.number(),
+        replies: z.number(),
+      }),
+      liked: z.boolean(),
+    })
+  ),
+});
 
-export default function FetchAllTweets() {
+export default function FetchAllTweets(props) {
   const [tweets, setTweets] = useState<TlTweets | null>(null);
 
   useEffect(() => {
