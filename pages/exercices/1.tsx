@@ -48,6 +48,7 @@ export default function FetchAllTweets(props) {
       .then((res) => res.json())
       .then((data) => {
         // 🦁 Utiliser le schéma TweetsScheme pour valider la réponse de l'API
+        const safeData = TweetsScheme.safeParse(data);
 
         setTweets(data.tweets);
       })
