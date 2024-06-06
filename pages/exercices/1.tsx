@@ -1,60 +1,62 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { z } from 'zod';
 import { Loader } from '~/components/Loader';
 import type { TlTweets } from '~/lib/scheme/tweets';
+import TwitterLayout from '../../src/components/TwitterLayout';
 import { AddTweetForm } from '../../src/components/tweets/AddTweetForm';
 import { LikeButton } from '../../src/components/tweets/LikeButton';
 import { RepliesButton } from '../../src/components/tweets/RepliesButton';
 import { Tweet } from '../../src/components/tweets/Tweet';
-import TwitterLayout from '../../src/components/TwitterLayout';
-
-import { z } from 'zod';
 
 const notifyFailed = () => toast.error("Couldn't fetch tweet...");
 
-// 🦁 Créer un schéma zod appelé TweetsScheme qui correspond à la réponse de l'API
-// Tu peux `console.log` la réponse de l'API pour voir la structure attendue
-// Tu pourrais utiliser zod transform pour modifier directement dans le schéma la date
 const TweetsScheme = z.object({
   tweets: z.array(
     z.object({
       id: z.string(),
       content: z.string(),
-      createdAt: z.string().transform((date) => new Date(date)),
+      createdAt: z.string(),
       user: z.object({
         id: z.string(),
         displayName: z.string(),
         username: z.string(),
         avatarUrl: z.string(),
       }),
-      likes: z.array(z.string()).optional(),
+      liked: z.boolean(),
       _count: z.object({
         likes: z.number(),
         replies: z.number(),
       }),
-      liked: z.boolean(),
     })
   ),
 });
 
+const getTweets = async (signal: AbortSignal) =>
+  fetch(`/api/tweets`, { signal })
+    .then((res) => res.json())
+    .then((data) => TweetsScheme.parse(data));
+
 export default function FetchAllTweets(props) {
-  const [tweets, setTweets] = useState<TlTweets | null>(null);
+  const [tweets, setTweets] = useState<TlTweets | null>();
 
   useEffect(() => {
-    // 🦁 Créer un abort controller pour annuler la requête si l'utilisateur quitte la page
+    const abortController = new AbortController();
 
-    // 🦁 Passer le signal à la requête fetch
-    fetch('/api/tweets') // ℹ️ tu peux remplacer l'url par `/api/tweets?error=erreur` pour voir le problème
-      .then((res) => res.json())
+    getTweets(abortController.signal)
       .then((data) => {
-        // 🦁 Utiliser le schéma TweetsScheme pour valider la réponse de l'API
-        const safeData = TweetsScheme.safeParse(data);
-
         setTweets(data.tweets);
       })
-      .catch(() => void 0); // 🦁 Ajouter un catch pour gérer les erreurs
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
 
-    // 🦁 Créer la cleanup fonction qui annule la requête
+        notifyFailed();
+        setTweets([]);
+      });
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   if (!tweets) return <Loader />;
@@ -65,7 +67,7 @@ export default function FetchAllTweets(props) {
       {tweets.map((tweet) => (
         <Tweet key={tweet.id} tweet={tweet}>
           <RepliesButton count={tweet._count.replies} />
-          <LikeButton count={tweet._count.likes} />
+          <LikeButton count={tweet._count.likes} liked={tweet.liked} />
         </Tweet>
       ))}
     </TwitterLayout>
