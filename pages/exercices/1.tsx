@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { z } from 'zod';
 import { Loader } from '~/components/Loader';
 import type { TlTweets } from '~/lib/scheme/tweets';
-import TwitterLayout from '../../src/components/TwitterLayout';
 import { AddTweetForm } from '../../src/components/tweets/AddTweetForm';
 import { LikeButton } from '../../src/components/tweets/LikeButton';
 import { RepliesButton } from '../../src/components/tweets/RepliesButton';
 import { Tweet } from '../../src/components/tweets/Tweet';
+import TwitterLayout from '../../src/components/TwitterLayout';
 
 const notifyFailed = () => toast.error("Couldn't fetch tweet...");
 
@@ -23,27 +23,26 @@ const TweetsScheme = z.object({
         username: z.string(),
         avatarUrl: z.string(),
       }),
-      liked: z.boolean(),
       _count: z.object({
         likes: z.number(),
         replies: z.number(),
       }),
+      liked: z.boolean(),
     })
   ),
 });
 
-const getTweets = async (signal: AbortSignal) =>
-  fetch(`/api/tweets`, { signal })
-    .then((res) => res.json())
-    .then((data) => TweetsScheme.parse(data));
-
-export default function FetchAllTweets(props) {
+export default function FetchAllTweets() {
   const [tweets, setTweets] = useState<TlTweets | null>();
 
   useEffect(() => {
     const abortController = new AbortController();
 
-    getTweets(abortController.signal)
+    fetch('/api/tweets', {
+      signal: abortController.signal,
+    })
+      .then((res) => res.json())
+      .then((json) => TweetsScheme.parse(json))
       .then((data) => {
         setTweets(data.tweets);
       })
@@ -67,7 +66,7 @@ export default function FetchAllTweets(props) {
       {tweets.map((tweet) => (
         <Tweet key={tweet.id} tweet={tweet}>
           <RepliesButton count={tweet._count.replies} />
-          <LikeButton count={tweet._count.likes} liked={tweet.liked} />
+          <LikeButton count={tweet._count.likes} />
         </Tweet>
       ))}
     </TwitterLayout>

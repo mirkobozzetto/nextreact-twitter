@@ -29,7 +29,7 @@ const selectTweetQuery = (userId?: string) =>
         replies: true,
       },
     },
-  } satisfies Prisma.TweetSelect);
+  }) satisfies Prisma.TweetSelect;
 
 export const getTweets = async (userId?: string, page = 0) => {
   const tweets = await prisma.tweet.findMany({

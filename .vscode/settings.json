@@ -2,5 +2,7 @@
   "typescript.tsdk": "node_modules/.pnpm/typescript@4.9.4/node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "WillLuke.nextjs.addTypesOnSave": true,
-  "WillLuke.nextjs.hasPrompted": true
+  "WillLuke.nextjs.hasPrompted": true,
+  "CodeGPT.apiKey": "Anthropic",
+  "CodeGPT.Autocomplete.enabled": false
 }
